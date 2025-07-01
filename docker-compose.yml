@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # Aplicação NestJS
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ecommerce-event-processor
+    ports:
+      - "3000:3000"
+    environment:
+      # Database
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=ecommerce_events
+      
+      # RabbitMQ
+      - RABBITMQ_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
+      - RABBITMQ_QUEUE_ORDER=order.events
+      - RABBITMQ_QUEUE_PAYMENT=payment.events
+      - RABBITMQ_QUEUE_NOTIFICATION=notification.events
+      - RABBITMQ_QUEUE_STOCK=stock.events
+      - RABBITMQ_DLQ_SUFFIX=.dlq
+      
+      # Batch Processing
+      - BATCH_SIZE=50
+      - BATCH_TIMEOUT=30000
+      
+      # Retry Configuration
+      - MAX_RETRY_ATTEMPTS=3
+      - RETRY_DELAY=5000
+      - RETRY_BACKOFF_FACTOR=2
+      
+      # Application
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ecommerce-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ecommerce_events
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: ecommerce-rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=rabbitmq
+      - RABBITMQ_DEFAULT_PASS=rabbitmq
+      - RABBITMQ_DEFAULT_VHOST=/
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+  # RabbitMQ Management UI (opcional, para desenvolvimento e monitoramento)
+  rabbitmq-exporter:
+    image: kbudde/rabbitmq-exporter:latest
+    container_name: rabbitmq-exporter
+    environment:
+      - RABBIT_URL=http://rabbitmq:15672
+      - RABBIT_USER=rabbitmq
+      - RABBIT_PASSWORD=rabbitmq
+    ports:
+      - "9419:9419"
+    depends_on:
+      - rabbitmq
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+networks:
+  ecommerce-network:
+    driver: bridge 
