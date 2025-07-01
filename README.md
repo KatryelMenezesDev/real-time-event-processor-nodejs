@@ -594,26 +594,4 @@ Esta solução se encaixa perfeitamente em uma arquitetura de microserviços:
 
 ---
 
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
-
-## 📄 Licença
-
-Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
-
----
-
-## 📞 Suporte
-
-- **📧 Email**: dev@empresa.com
-- **🐛 Issues**: [GitHub Issues](https://github.com/seu-usuario/ecommerce-event-processor/issues)
-- **📚 Documentação**: [Wiki do Projeto](https://github.com/seu-usuario/ecommerce-event-processor/wiki)
-
----
-
 **Este sistema demonstra como combinar tecnologias modernas com padrões de design sólidos para criar uma solução robusta, escalável e maintível para processamento de eventos em tempo real.** 🚀 
